@@ -1,19 +1,15 @@
-
 function love.conf(t)
-    t.title = "Asteroids" -- Window title
-    t.version = "11.5"  -- Target LÖVE version (ensure compatibility)
-    t.window.width = 800 -- Initial window width
-    t.window.height = 600 -- Initial window height
-    t.window.vsync = true -- Enable vsync to prevent screen tearing (recommended)
-
-    t.window.resizable = true -- Allow window resizing
-    t.window.minwidth = 400 -- Minimum allowed window width
-    t.window.minheight = 300 -- Minimum allowed window height
-
-    t.window.fullscreen = false -- Start in windowed mode
-    t.window.fullscreentype = "desktop" -- Use desktop resolution for fullscreen
-
-    t.window.msaa = 0 -- Antialiasing (0 = off, higher values = smoother lines but more GPU load)
+    t.title = "Arcade System"
+    t.version = "11.5"  -- Target LÖVE version
+    t.window.width = 800
+    t.window.height = 600
+    t.window.vsync = true
+    t.window.resizable = true
+    t.window.minwidth = 400
+    t.window.minheight = 300
+    t.window.fullscreen = false
+    t.window.fullscreentype = "desktop"
+    t.window.msaa = 0
 
     -- Enable necessary LÖVE modules
     t.modules.audio = true
@@ -21,17 +17,17 @@ function love.conf(t)
     t.modules.event = true
     t.modules.font = true
     t.modules.graphics = true
-    t.modules.image = true -- Though not used directly, good to have
+    t.modules.image = true
     t.modules.joystick = false -- Disable if not needed
     t.modules.keyboard = true
     t.modules.math = true
-    t.modules.mouse = true -- Might be useful for menus later
-    t.modules.physics = false -- Not using LÖVE's physics engine
-    t.modules.sound = true -- Needed for generated sounds
+    t.modules.mouse = true
+    t.modules.physics = false
+    t.modules.sound = true
     t.modules.system = true
-    t.modules.thread = false -- Disable if not needed
+    t.modules.thread = false
     t.modules.timer = true
-    t.modules.touch = false -- Disable if not needed
-    t.modules.video = false -- Disable if not needed
+    t.modules.touch = false
+    t.modules.video = false
     t.modules.window = true
 end
