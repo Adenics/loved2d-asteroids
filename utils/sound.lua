@@ -1,15 +1,12 @@
--- Sound generation utilities
 local sound = {}
 
--- Generates sound effects programmatically
 function sound.generateSounds()
     local sounds = {}
-    local sampleRate = 22050 -- Standard sample rate for retro sounds
-    local bitDepth = 16     -- Standard bit depth
-    local channels = 1      -- Mono sound effects
+    local sampleRate = 22050 
+    local bitDepth = 16     
+    local channels = 1      
     local success, result
 
-    -- Dummy sound object to prevent errors if sound generation fails
     local dummySound = {
         play = function() end,
         stop = function() end,
@@ -19,7 +16,6 @@ function sound.generateSounds()
         clone = function() return dummySound end
     }
 
-    -- Helper function to create a LÖVE Source from SoundData, with error handling
     local function createSource(data, type)
         local suc, src = pcall(love.audio.newSource, data, type)
         if suc then
@@ -30,8 +26,7 @@ function sound.generateSounds()
         end
     end
 
-    -- Thrust (Low rumble with LFO for a pulsating effect)
-    local thrustDurationSamples = sampleRate * 2 -- 2 seconds loop
+    local thrustDurationSamples = sampleRate * 2 
     success, result = pcall(love.sound.newSoundData, thrustDurationSamples, sampleRate, bitDepth, channels)
     if success then
         local thrustData = result
@@ -51,7 +46,6 @@ function sound.generateSounds()
         sounds.thrust = dummySound
     end
 
-    -- Player Shoot (Downward pitch sweep)
     success, result = pcall(love.sound.newSoundData, 4096, sampleRate, bitDepth, channels)
     if success then
         local fireData = result
@@ -66,7 +60,6 @@ function sound.generateSounds()
         sounds.shoot = dummySound
     end
 
-    -- Generic Explosion (White noise burst with decay, for asteroids)
     success, result = pcall(love.sound.newSoundData, 8192, sampleRate, bitDepth, channels)
     if success then
         local explosionData = result
@@ -80,7 +73,6 @@ function sound.generateSounds()
         sounds.explosion = dummySound
     end
 
-    -- Player Explode (Atari-style: short, punchy, noise-based)
     local deathDurationSeconds = 0.6
     local deathDurationSamples = math.floor(sampleRate * deathDurationSeconds)
     success, result = pcall(love.sound.newSoundData, deathDurationSamples, sampleRate, bitDepth, channels)
@@ -110,7 +102,6 @@ function sound.generateSounds()
         sounds.player_explode = dummySound
     end
 
-    -- Player Spawn (Series of clicks)
     local playerSpawnSampleCount = math.floor(sampleRate * 0.7)
     success, result = pcall(love.sound.newSoundData, playerSpawnSampleCount, sampleRate, bitDepth, channels)
     if success then
@@ -135,7 +126,6 @@ function sound.generateSounds()
         sounds.player_spawn = dummySound
     end
 
-    -- UFO Spawn (Short high beep)
     success, result = pcall(love.sound.newSoundData, 4410, sampleRate, bitDepth, channels)
     if success then
         local spawnData = result
@@ -149,7 +139,6 @@ function sound.generateSounds()
         sounds.ufo_spawn = dummySound
     end
 
-    -- UFO Flying (Siren sound)
     success, result = pcall(love.sound.newSoundData, sampleRate, sampleRate, bitDepth, channels)
     if success then
         local flyingData = result
@@ -170,7 +159,6 @@ function sound.generateSounds()
         sounds.ufo_flying = dummySound
     end
 
-    -- UFO Shoot
     success, result = pcall(love.sound.newSoundData, 4096, sampleRate, bitDepth, channels)
     if success then
         local ufoShootData = result
@@ -185,7 +173,6 @@ function sound.generateSounds()
         sounds.ufo_shoot = dummySound
     end
 
-    -- Hyperspace (Weird rising/falling pitch)
     success, result = pcall(love.sound.newSoundData, 8820, sampleRate, bitDepth, channels)
     if success then
         local hyperData = result
@@ -200,42 +187,39 @@ function sound.generateSounds()
         sounds.hyperspace = dummySound
     end
 
-    -- Game Over (Descending arpeggio only)
-    local gameOverDurationSeconds = 1.5 -- Adjusted duration for arpeggio only
+    local gameOverDurationSeconds = 1.5 
     local gameOverSampleCount = math.floor(sampleRate * gameOverDurationSeconds)
     success, result = pcall(love.sound.newSoundData, gameOverSampleCount, sampleRate, bitDepth, channels)
     if success then
         local gameOverData = result
-        local overallVolume = 0.8 -- Slightly increased volume as it's the only component
+        local overallVolume = 0.8 
 
-        -- Descending Arpeggio (e.g., C minor: G, Eb, C)
         local arpeggioNotes = {
-            {freq = 392.00, duration = 0.4, volume = 0.9}, -- G4
-            {freq = 311.13, duration = 0.4, volume = 0.8}, -- Eb4
-            {freq = 261.63, duration = 0.5, volume = 0.7}  -- C4
+            {freq = 392.00, duration = 0.4, volume = 0.9}, 
+            {freq = 311.13, duration = 0.4, volume = 0.8}, 
+            {freq = 261.63, duration = 0.5, volume = 0.7}  
         }
         local currentSampleOffset = 0
 
-        for i = 0, gameOverSampleCount - 1 do -- Initialize all samples to 0
+        for i = 0, gameOverSampleCount - 1 do 
             gameOverData:setSample(i, 0)
         end
 
         for noteIdx, noteInfo in ipairs(arpeggioNotes) do
             local noteDurationSamples = math.floor(sampleRate * noteInfo.duration)
             local noteEndTimeSamples = currentSampleOffset + noteDurationSamples
-            
+
             for i = currentSampleOffset, math.min(noteEndTimeSamples - 1, gameOverSampleCount - 1) do
-                local t_note = (i - currentSampleOffset) / noteDurationSamples -- Time within this note
-                local envelope = math.pow(1 - t_note, 1.5) -- Exponential decay for the note
+                local t_note = (i - currentSampleOffset) / noteDurationSamples 
+                local envelope = math.pow(1 - t_note, 1.5) 
                 local sampleValue = math.sin((i / sampleRate) * noteInfo.freq * 2 * math.pi) * noteInfo.volume * envelope
-                
-                local existingSample = gameOverData:getSample(i) -- Should be 0 if initialized correctly
+
+                local existingSample = gameOverData:getSample(i) 
                 gameOverData:setSample(i, existingSample + sampleValue * overallVolume)
             end
             currentSampleOffset = noteEndTimeSamples
         end
-        
-        -- Final normalization pass to prevent clipping
+
         for i = 0, gameOverSampleCount - 1 do
             local s = gameOverData:getSample(i)
             gameOverData:setSample(i, math.max(-1, math.min(1, s)))
@@ -247,25 +231,24 @@ function sound.generateSounds()
         sounds.gameOver = dummySound
     end
 
-    -- Menu Select Beep (New Sound)
-    local menuSelectDurationSeconds = 0.07 -- Very short
+    local menuSelectDurationSeconds = 0.07 
     local menuSelectSampleCount = math.floor(sampleRate * menuSelectDurationSeconds)
     success, result = pcall(love.sound.newSoundData, menuSelectSampleCount, sampleRate, bitDepth, channels)
     if success then
         local menuSelectData = result
-        local beepFreq = 880.00 -- A5 note, a clear beep
+        local beepFreq = 880.00 
         local beepVolume = 0.5
         for i = 0, menuSelectData:getSampleCount() - 1 do
             local t = i / menuSelectData:getSampleCount()
-            -- Simple envelope: quick attack, slightly longer decay
+
             local envelope = 0
-            if t < 0.2 then -- Attack phase (20% of duration)
+            if t < 0.2 then 
                 envelope = t / 0.2
-            else -- Decay phase (remaining 80%)
+            else 
                 envelope = 1 - ((t - 0.2) / 0.8)
             end
-            envelope = math.max(0, envelope) -- Ensure envelope doesn't go negative
-            
+            envelope = math.max(0, envelope) 
+
             local sampleValue = math.sin( (i / sampleRate) * beepFreq * 2 * math.pi) * beepVolume * envelope
             menuSelectData:setSample(i, sampleValue)
         end

@@ -1,32 +1,27 @@
--- Player module for Asteroids
 local Player = {}
 
--- Import dependencies
 local helpers = require("utils.helpers")
 
--- Constants
-local ROTATION_SPEED = 4.5 -- Radians per second
-local THRUST = 375 -- Acceleration units
-local FRICTION = 0.985 -- Multiplier applied each frame to velocity
-local MAX_SPEED = 580 -- Maximum velocity
-local GUN_COOLDOWN = 0.2 -- Seconds between shots (handled by Player module)
-local INVULNERABILITY_TIME = 2.0 -- Seconds after respawn or hyperspace (visual only now)
-local HYPERSPACE_COOLDOWN = 5.0 -- Seconds between hyperspace jumps
-local DEATH_ANIM_DURATION = 2.0 -- Seconds for death animation
-local RESPAWN_ANIM_DURATION = 1.0 -- Seconds for respawn animation
-local SEGMENT_MAX_SPEED = 150 -- Max speed for flying segments during death
-local SEGMENT_MAX_SPIN = 3.0 -- Max rotation speed for flying segments
-local GAME_OVER_FADE_DURATION = 1.5 -- Seconds for segments to fade out
+local ROTATION_SPEED = 4.5 
+local THRUST = 375 
+local FRICTION = 0.985 
+local MAX_SPEED = 580 
+local GUN_COOLDOWN = 0.2 
+local INVULNERABILITY_TIME = 2.0 
+local HYPERSPACE_COOLDOWN = 5.0 
+local DEATH_ANIM_DURATION = 2.0 
+local RESPAWN_ANIM_DURATION = 1.0 
+local SEGMENT_MAX_SPEED = 150 
+local SEGMENT_MAX_SPIN = 3.0 
+local GAME_OVER_FADE_DURATION = 1.5 
 
--- Module variables
 local gameWidth, gameHeight
 local sounds
 local player = {}
-local gunTimer = 0 -- Timer for player's own gun cooldown
-local invulnerableTimer = 0 -- Timer for visual invulnerability (blinking)
+local gunTimer = 0 
+local invulnerableTimer = 0 
 local hyperspaceTimer = 0
 
--- Initialize module
 function Player.init(soundsTable, width, height)
     sounds = soundsTable
     gameWidth = width
@@ -34,60 +29,55 @@ function Player.init(soundsTable, width, height)
     Player.resetState()
 end
 
--- Reset player state
 function Player.resetState()
     player = {
         x = gameWidth / 2,
         y = gameHeight / 2,
         dx = 0,
         dy = 0,
-        angle = -math.pi / 2, -- Pointing up
-        radius = 10, -- Collision radius (approximate)
+        angle = -math.pi / 2, 
+        radius = 10, 
         thrusting = false,
-        visible = false, -- Start invisible until first spawn/respawn animation completes
-        alive = false, -- Start not alive
-        isDying = false, -- True during death animation
-        isRespawning = false, -- True during respawn animation
+        visible = false, 
+        alive = false, 
+        isDying = false, 
+        isRespawning = false, 
         deathAnimProgress = 0,
         respawnAnimProgress = 0,
-        deathX = nil, -- Stores position at point of death for animation
+        deathX = nil, 
         deathY = nil,
         deathAngle = nil,
-        deathSegments = nil, -- Stores ship segments for explosion animation
-        gameOverFadeTimer = nil, -- Timer for fading out segments on game over screen
-        shape = { -- Ship shape vertices relative to player's center (x, y)
-            { x = 12, y = 0 },  -- Nose
-            { x = -8, y = -7 }, -- Left wing back
-            { x = -8, y = 7 }   -- Right wing back
+        deathSegments = nil, 
+        gameOverFadeTimer = nil, 
+        shape = { 
+            { x = 12, y = 0 },  
+            { x = -8, y = -7 }, 
+            { x = -8, y = 7 }   
         }
     }
     gunTimer = 0
-    invulnerableTimer = 0 -- Reset visual invulnerability timer
+    invulnerableTimer = 0 
     hyperspaceTimer = 0
     print("Player State Reset")
 end
 
--- Update player logic
 function Player.update(dt)
-    -- Don't update controllable actions if not alive or during animations
+
     if not player or not player.alive or player.isDying or player.isRespawning then
-        -- Still update timers even if not controllable
+
         invulnerableTimer = math.max(0, invulnerableTimer - dt)
         hyperspaceTimer = math.max(0, hyperspaceTimer - dt)
         gunTimer = math.max(0, gunTimer - dt)
         return
     end
 
-    -- Update timers
     gunTimer = math.max(0, gunTimer - dt)
-    invulnerableTimer = math.max(0, invulnerableTimer - dt) -- This timer now only controls blinking
+    invulnerableTimer = math.max(0, invulnerableTimer - dt) 
     hyperspaceTimer = math.max(0, hyperspaceTimer - dt)
 
-    -- Rotation
     if love.keyboard.isDown("left") then player.angle = player.angle - ROTATION_SPEED * dt end
     if love.keyboard.isDown("right") then player.angle = player.angle + ROTATION_SPEED * dt end
 
-    -- Thrusting
     player.thrusting = false
     if love.keyboard.isDown("up") then
         player.thrusting = true
@@ -95,11 +85,9 @@ function Player.update(dt)
         player.dy = player.dy + math.sin(player.angle) * THRUST * dt
     end
 
-    -- Apply friction
     player.dx = player.dx * FRICTION
     player.dy = player.dy * FRICTION
 
-    -- Clamp speed to maximum
     local speedSq = player.dx^2 + player.dy^2
     if speedSq > MAX_SPEED^2 then
         local speed = math.sqrt(speedSq)
@@ -107,55 +95,47 @@ function Player.update(dt)
         player.dy = (player.dy / speed) * MAX_SPEED
     end
 
-    -- Update position and wrap around screen edges
     player.x = helpers.wrap(player.x + player.dx * dt, 0, gameWidth)
     player.y = helpers.wrap(player.y + player.dy * dt, 0, gameHeight)
 
-    -- Hyperspace
     if love.keyboard.isDown("h") and hyperspaceTimer <= 0 then
         player.x = love.math.random(gameWidth)
         player.y = love.math.random(gameHeight)
-        player.dx = 0 -- Stop movement after hyperspace
+        player.dx = 0 
         player.dy = 0
         hyperspaceTimer = HYPERSPACE_COOLDOWN
-        invulnerableTimer = INVULNERABILITY_TIME -- Grant visual invulnerability after jump
+        invulnerableTimer = INVULNERABILITY_TIME 
         if sounds.hyperspace then sounds.hyperspace:play() end
         print("Player hyperspaced. Visual invulnerability granted.")
     end
 end
 
--- Handle player hit
 function Player.hit()
-    -- MODIFIED: Removed 'invulnerableTimer > 0' check.
-    -- Player can now be hit even if the invulnerableTimer is active (i.e., blinking).
-    -- Hits are ignored only if not alive, already dying, or currently respawning.
+
     if not player or not player.alive or player.isDying or player.isRespawning then
         if player and invulnerableTimer > 0 then
              print("Player.hit: Hit occurred during visual invulnerability, but damage is applied.")
         end
-        return -- No effect if not in a hittable state
+        return 
     end
 
     print("Player.hit: Player has been hit!")
-    -- Play explosion sound
+
     if sounds.player_explode then sounds.player_explode:play() end
 
-    -- Create particles at player position
-    local Particles = require("games.asteroids.particles") -- Local require to avoid load-time circular deps
+    local Particles = require("games.asteroids.particles") 
     Particles.createExplosion(player.x, player.y, 20)
 
-    player.alive = false -- No longer controllable
-    player.thrusting = false -- Stop thrusting visually and audibly
-    player.isDying = true -- Start the death animation sequence
+    player.alive = false 
+    player.thrusting = false 
+    player.isDying = true 
     player.deathAnimProgress = 0
-    player.visible = false -- Hide the main ship sprite during death animation
+    player.visible = false 
 
-    -- Store death location and angle for the segment animation
     player.deathX = player.x
     player.deathY = player.y
     player.deathAngle = player.angle
 
-    -- Create segment data for death animation (ship breaking apart)
     player.deathSegments = {}
     if player.shape and #player.shape >= 3 then
         for i = 1, #player.shape do
@@ -175,14 +155,13 @@ function Player.hit()
                 p1 = p1_rel, p2 = p2_rel,
                 x = 0, y = 0, angle = player.deathAngle,
                 vx = vx, vy = vy, spin = spin,
-                startX = 0, startY = 0, startAngle = 0 -- For respawn animation
+                startX = 0, startY = 0, startAngle = 0 
             })
         end
     end
-    return true -- Hit was processed
+    return true 
 end
 
--- Update death animation (ship pieces flying apart)
 function Player.updateDeathAnimation(dt, onComplete)
     if not player or not player.deathSegments then return end
 
@@ -191,12 +170,12 @@ function Player.updateDeathAnimation(dt, onComplete)
             seg.x = seg.x + seg.vx * dt
             seg.y = seg.y + seg.vy * dt
             seg.angle = seg.angle + seg.spin * dt
-            -- Simplified boundary interaction: slow down velocity, no bounce
+
             local worldX1 = (player.deathX or 0) + seg.x
             local worldY1 = (player.deathY or 0) + seg.y
             if worldX1 < 0 or worldX1 > gameWidth then seg.vx = seg.vx * 0.95 end
             if worldY1 < 0 or worldY1 > gameHeight then seg.vy = seg.vy * 0.95 end
-            seg.vx = seg.vx * 0.995 -- Air resistance
+            seg.vx = seg.vx * 0.995 
             seg.vy = seg.vy * 0.995
         end
     end
@@ -218,7 +197,6 @@ function Player.updateDeathAnimation(dt, onComplete)
     end
 end
 
--- Start respawn animation (ship pieces flying back together)
 function Player.startRespawnAnimation()
     print("Starting Respawn Animation...")
     local respawnX = gameWidth / 2
@@ -227,31 +205,30 @@ function Player.startRespawnAnimation()
     player.y = respawnY
     player.dx = 0
     player.dy = 0
-    player.angle = -math.pi / 2 -- Default pointing up
-    player.visible = false -- Remains invisible until animation completes
-    player.alive = false   -- Not truly alive until animation completes
+    player.angle = -math.pi / 2 
+    player.visible = false 
+    player.alive = false   
     player.isRespawning = true
     player.respawnAnimProgress = 0
 
     if player.deathSegments then
         for _, seg in ipairs(player.deathSegments) do
-            -- Calculate current world position of segment relative to death point
+
             local currentSegWorldX = (player.deathX or respawnX) + seg.x
             local currentSegWorldY = (player.deathY or respawnY) + seg.y
-            -- Store start positions relative to the *new* respawn center for interpolation
+
             seg.startX = currentSegWorldX - respawnX
             seg.startY = currentSegWorldY - respawnY
             seg.startAngle = seg.angle
         end
     else
         print("Warning: No death segments for respawn animation.")
-        -- If no segments, player will just pop in after respawn duration
+
     end
 
     if sounds.player_spawn then sounds.player_spawn:play() end
 end
 
--- Update respawn animation
 function Player.updateRespawnAnimation(dt)
     if not player or not player.isRespawning then return end
 
@@ -260,11 +237,11 @@ function Player.updateRespawnAnimation(dt)
 
     if player.deathSegments then
         for _, seg in ipairs(player.deathSegments) do
-            local targetX, targetY, targetAngle = 0, 0, player.angle -- Target is center of new ship
+            local targetX, targetY, targetAngle = 0, 0, player.angle 
             seg.x = seg.startX + (targetX - seg.startX) * progress
             seg.y = seg.startY + (targetY - seg.startY) * progress
             local angleDiff = targetAngle - seg.startAngle
-            angleDiff = (angleDiff + math.pi) % (2 * math.pi) - math.pi -- Normalize angle difference
+            angleDiff = (angleDiff + math.pi) % (2 * math.pi) - math.pi 
             seg.angle = seg.startAngle + angleDiff * progress
         end
     end
@@ -274,13 +251,12 @@ function Player.updateRespawnAnimation(dt)
         player.isRespawning = false
         player.visible = true
         player.alive = true
-        invulnerableTimer = INVULNERABILITY_TIME -- Grant visual invulnerability
-        player.deathSegments = nil -- Clear segments as ship is reformed
+        invulnerableTimer = INVULNERABILITY_TIME 
+        player.deathSegments = nil 
         print("Player respawned. Visual invulnerability granted.")
     end
 end
 
--- Draw player
 function Player.draw(offsets)
     if not player then return end
 
@@ -314,11 +290,10 @@ function Player.draw(offsets)
             love.graphics.push()
             love.graphics.translate(offset[1] + player.x, offset[2] + player.y)
 
-            -- Handle visual invulnerability blink (timer now only controls this)
             if invulnerableTimer > 0 then
-                if math.floor(invulnerableTimer * 10) % 2 == 0 then -- Blink effect
+                if math.floor(invulnerableTimer * 10) % 2 == 0 then 
                     love.graphics.pop()
-                    goto continue_draw_loop -- Skip drawing this instance for blink
+                    goto continue_draw_loop 
                 end
             end
 
@@ -344,7 +319,6 @@ function Player.draw(offsets)
     end
 end
 
--- Getters and setters
 function Player.getPosition() return player.x, player.y end
 function Player.getAngle() return player.angle end
 function Player.getVelocity() return player.dx, player.dy end
@@ -352,14 +326,10 @@ function Player.getRadius() return player.radius end
 function Player.getShape() return player.shape end
 function Player.isThrusting() return player.thrusting end
 
--- Player is fully alive and controllable
 function Player.isFullyAlive()
     return player.alive and not player.isDying and not player.isRespawning
 end
 
--- Player can be hit if alive and not in death/respawn animation.
--- MODIFIED: Removed 'invulnerableTimer <= 0' check.
--- The invulnerableTimer now ONLY controls the blinking visual.
 function Player.canBeHit()
     return player.alive and not player.isDying and not player.isRespawning
 end
@@ -367,7 +337,6 @@ end
 function Player.setVisible(visible) player.visible = visible end
 function Player.setAlive(alive) player.alive = alive end
 
--- Sets the visual invulnerability timer
 function Player.setInvulnerable(invulnerable)
     if invulnerable then
         invulnerableTimer = INVULNERABILITY_TIME
@@ -379,7 +348,7 @@ function Player.setInvulnerable(invulnerable)
 end
 
 function Player.getGunCooldown() return gunTimer end
-function Player.setGunCooldown(time) gunTimer = time end -- Not typically set externally
-function Player.resetGunCooldown() gunTimer = GUN_COOLDOWN end -- Called by Bullets.fire
+function Player.setGunCooldown(time) gunTimer = time end 
+function Player.resetGunCooldown() gunTimer = GUN_COOLDOWN end 
 
 return Player

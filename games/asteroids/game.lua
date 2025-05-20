@@ -1,7 +1,5 @@
--- Main Asteroids game module
 local game = {}
 
--- Import dependencies
 local helpers = require("utils.helpers")
 local soundGen = require("utils.sound")
 local Player = require("games.asteroids.player")
@@ -11,23 +9,20 @@ local UFO = require("games.asteroids.ufo")
 local Particles = require("games.asteroids.particles")
 local UI = require("games.asteroids.ui")
 
--- Game state and constants
 local GAME_WIDTH = 800
 local GAME_HEIGHT = 600
 local score = 0
 local lives = 3
 local wave = 0
-local gameState = "title" -- "title", "playing", "gameOver"
-local isGameOver = false -- Redundant with gameState, but can be useful for specific checks
+local gameState = "title" 
+local isGameOver = false 
 local timeSinceLastUFO = 0
-local ufoSpawnInterval = 18 -- Seconds between potential UFO spawns
-local PLAYER_SPAWN_SAFE_ZONE_RADIUS = 180 -- Min distance asteroids spawn from player
+local ufoSpawnInterval = 18 
+local PLAYER_SPAWN_SAFE_ZONE_RADIUS = 180 
 
--- Sounds
 local sounds = {}
-local thrustPlaying = false -- Tracks if the thrust sound is currently meant to be playing
+local thrustPlaying = false 
 
--- Initialize the game
 function game.load()
     if love.audio then love.audio.setVolume(0.5) end
     love.graphics.setLineWidth(1.5)
@@ -43,7 +38,6 @@ function game.load()
     print("Asteroids game loaded. State: " .. gameState)
 end
 
--- Start a new game
 function game.startGame()
     print("Starting New Game...")
     score = 0
@@ -62,14 +56,13 @@ function game.startGame()
     timeSinceLastUFO = 0
     wave = 1
     Asteroids.spawnInitial(wave + 2)
-    if thrustPlaying then -- Ensure thrust sound is stopped from any previous state
+    if thrustPlaying then 
         if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
         thrustPlaying = false
     end
     print("First spawn complete. Wave: " .. wave)
 end
 
--- Check for collisions between game objects
 function game.checkCollisions()
     if not Player.canBeHit() then return end
 
@@ -104,9 +97,8 @@ function game.checkCollisions()
     end
 end
 
--- Update game state
 function game.update(dt)
-    dt = math.min(dt, 1/30) -- Clamp delta time
+    dt = math.min(dt, 1/30) 
 
     if gameState == "playing" then
         Player.updateDeathAnimation(dt, function()
@@ -118,7 +110,7 @@ function game.update(dt)
                 if UFO.isActive() and sounds.ufo_flying and sounds.ufo_flying:isPlaying() then
                     sounds.ufo_flying:stop()
                 end
-                -- Ensure thrust sound is stopped on game over transition
+
                 if thrustPlaying then
                     if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
                     thrustPlaying = false
@@ -133,7 +125,7 @@ function game.update(dt)
 
         if Player.isFullyAlive() then
             Player.update(dt)
-            -- Manage thrust sound
+
             if Player.isThrusting() and not thrustPlaying then
                 if sounds.thrust and not sounds.thrust:isPlaying() then sounds.thrust:play() end
                 thrustPlaying = true
@@ -142,8 +134,7 @@ function game.update(dt)
                 thrustPlaying = false
             end
         else
-            -- Player is not fully alive (e.g., dying, respawning, or just hit)
-            -- Ensure thrust sound is stopped if it was playing.
+
             if thrustPlaying then
                 if sounds.thrust and sounds.thrust:isPlaying() then
                     sounds.thrust:stop()
@@ -174,7 +165,7 @@ function game.update(dt)
         Player.updateDeathAnimation(dt)
         Particles.update(dt)
         UFO.update(dt, nil)
-        -- Ensure thrust sound is stopped in game over state (double check)
+
         if thrustPlaying then
             if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
             thrustPlaying = false
@@ -183,7 +174,6 @@ function game.update(dt)
     end
 end
 
--- Draw the game
 function game.draw()
     local actualW, actualH = love.graphics.getDimensions()
     local scaleX = actualW / GAME_WIDTH
@@ -223,7 +213,6 @@ function game.draw()
     love.graphics.pop()
 end
 
--- Handle key press events
 function game.keypressed(key)
     if key == "escape" then return end
 
@@ -243,7 +232,7 @@ function game.keypressed(key)
 end
 
 function game.keyreleased(key)
-    -- Not currently used for player actions
+
 end
 
 function game.resize(w, h)

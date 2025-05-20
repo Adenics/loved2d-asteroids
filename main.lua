@@ -1,16 +1,10 @@
--- Main entry point for the arcade system
--- Loads and initializes the menu
+gameState = "menu" 
+currentGame = nil  
 
--- Global variables
-gameState = "menu" -- "menu", "playing"
-currentGame = nil  -- Reference to the currently loaded game
-
--- Debug function to help trace errors
 function debug_print(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- Check if a file exists
 function file_exists(path)
     local file = io.open(path, "r")
     if file then file:close() return true else return false end
@@ -18,23 +12,20 @@ end
 
 function love.load()
     debug_print("Starting application...")
-    
-    -- Set random seed
+
     love.math.setRandomSeed(os.time())
-    
-    -- Set default background
+
     love.graphics.setBackgroundColor(0, 0, 0)
-    
-    -- Check if required directories and files exist
+
     debug_print("Checking directory structure...")
     if not love.filesystem.getInfo("menu.lua") then
         debug_print("ERROR: menu.lua not found in root directory!")
     end
-    
+
     if not love.filesystem.getInfo("games") then
         debug_print("ERROR: 'games' directory not found!")
     end
-    
+
     if love.filesystem.getInfo("games") then
         if not love.filesystem.getInfo("games/asteroids") then
             debug_print("ERROR: 'games/asteroids' directory not found!")
@@ -42,12 +33,11 @@ function love.load()
             debug_print("ERROR: 'games/asteroids/game.lua' not found!")
         end
     end
-    
+
     if not love.filesystem.getInfo("utils") then
         debug_print("ERROR: 'utils' directory not found!")
     end
-    
-    -- Try to load menu
+
     debug_print("Attempting to load menu...")
     local success, result = pcall(require, "menu")
     if success then
@@ -56,7 +46,7 @@ function love.load()
         debug_print("Menu loaded successfully")
     else
         debug_print("MENU LOAD ERROR: " .. tostring(result))
-        -- Create a minimal menu if proper menu can't be loaded
+
         menu = {
             load = function() end,
             update = function() end,
@@ -84,7 +74,7 @@ function love.draw()
     elseif gameState == "playing" and currentGame then
         currentGame.draw()
     else
-        -- Fallback if no state is valid
+
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.print("ERROR: Invalid game state", 50, 50)
     end
@@ -93,7 +83,7 @@ end
 function love.keypressed(key)
     if key == "escape" then
         if gameState == "playing" and currentGame then
-            -- Return to menu
+
             if currentGame.exit then currentGame.exit() end
             currentGame = nil
             gameState = "menu"
@@ -119,21 +109,19 @@ function love.resize(w, h)
     end
 end
 
--- Function to load and switch to a game
 function loadGame(gameName)
     debug_print("Attempting to load game: " .. gameName)
-    
+
     if gameState == "playing" and currentGame then
         if currentGame.exit then currentGame.exit() end
     end
-    
-    -- Try to load the game module
+
     local success, game = pcall(require, "games." .. gameName .. ".game")
-    
+
     if success then
         debug_print("Game module loaded successfully")
         currentGame = game
-        
+
         success, err = pcall(function() currentGame.load() end)
         if success then
             debug_print("Game initialized successfully")

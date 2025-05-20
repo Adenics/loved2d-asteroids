@@ -1,20 +1,16 @@
--- UFO module for Asteroids
 local UFO = {}
 
--- Import dependencies
 local helpers = require("utils.helpers")
 
--- Constants
-local UFO_SPEED = 110 -- Base horizontal speed
-local UFO_FIRE_RATE = 1.4 -- Seconds between shots
+local UFO_SPEED = 110 
+local UFO_FIRE_RATE = 1.4 
 local UFO_BULLET_SPEED = 270
 local UFO_POINTS = 200
-local UFO_MIN_LIFETIME = 8 -- Min seconds UFO stays on screen before trying to leave
-local UFO_MAX_LIFETIME = 15 -- Max seconds UFO stays on screen
-local UFO_DIRECTION_CHANGE_INTERVAL = 2.0 -- Seconds between potential direction changes
-local UFO_LEAVING_SPEED_MULTIPLIER = 3.0 -- How much faster it moves when leaving
+local UFO_MIN_LIFETIME = 8 
+local UFO_MAX_LIFETIME = 15 
+local UFO_DIRECTION_CHANGE_INTERVAL = 2.0 
+local UFO_LEAVING_SPEED_MULTIPLIER = 3.0 
 
--- Module variables
 local gameWidth, gameHeight
 local sounds
 local ufo = nil
@@ -23,7 +19,6 @@ local ufoActive = false
 local ufoFireTimer = 0
 local ufoDirectionChangeTimer = 0
 
--- Initialize module
 function UFO.init(soundsTable, width, height)
     sounds = soundsTable
     gameWidth = width
@@ -31,7 +26,6 @@ function UFO.init(soundsTable, width, height)
     UFO.clear()
 end
 
--- Clear UFO state
 function UFO.clear()
     ufo = nil
     ufoBullets = {}
@@ -40,21 +34,20 @@ function UFO.clear()
     ufoDirectionChangeTimer = 0
 end
 
--- Spawn UFO
 function UFO.spawn()
     if ufoActive then return false end
 
     local side = love.math.random(2)
     local x, y, dx, dy
-    local buffer = 20 -- Spawn slightly off-screen
+    local buffer = 20 
 
     y = love.math.random(gameHeight * 0.2, gameHeight * 0.8)
-    if side == 1 then -- Spawn from left
+    if side == 1 then 
         x, dx = -buffer, UFO_SPEED
-    else -- Spawn from right
+    else 
         x, dx = gameWidth + buffer, -UFO_SPEED
     end
-    dy = 0 -- Initially moves horizontally
+    dy = 0 
 
     ufo = {
         x = x, y = y, dx = dx, dy = dy,
@@ -81,65 +74,55 @@ function UFO.spawn()
     return true
 end
 
--- Update UFO
--- PlayerObject is the Player module, used for targeting and checking player state.
--- It can be 'nil' if the game state is 'gameOver'.
 function UFO.update(dt, PlayerObject)
     if not ufoActive or not ufo then return end
 
-    -- Determine if the player is effectively gone (dead, dying, or game over)
     local playerIsEffectivelyGone = false
-    if PlayerObject then -- Player module was passed
+    if PlayerObject then 
         if not PlayerObject.isFullyAlive() then
             playerIsEffectivelyGone = true
         end
-    else -- Player module was not passed (nil), implies game is in a state where player isn't active (e.g., gameOver)
+    else 
         playerIsEffectivelyGone = true
     end
 
-    -- If player is gone and UFO isn't already leaving, make it leave.
     if playerIsEffectivelyGone and not ufo.leaving then
         print("UFO: Player is no longer active or game is over. UFO initiating leave sequence.")
         ufo.leaving = true
-        -- Set initial direction to leave towards the nearest horizontal edge.
-        -- The speed multiplier will be applied in the 'if ufo.leaving then' block.
+
         if ufo.x < gameWidth / 2 then
-            ufo.dx = -UFO_SPEED -- Target left edge
+            ufo.dx = -UFO_SPEED 
         else
-            ufo.dx = UFO_SPEED  -- Target right edge
+            ufo.dx = UFO_SPEED  
         end
-        ufo.dy = 0 -- Leave horizontally
+        ufo.dy = 0 
         if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then
             sounds.ufo_flying:stop()
         end
     end
 
-    -- Handle UFO leaving behavior
     if ufo.leaving then
-        local despawn_buffer = ufo.radius + 10 -- Buffer for despawning off-screen
-        local leave_dx_direction = ufo.dx >= 0 and 1 or -1 -- Maintain current leaving direction
+        local despawn_buffer = ufo.radius + 10 
+        local leave_dx_direction = ufo.dx >= 0 and 1 or -1 
 
-        -- If dx somehow became 0 while leaving, re-establish a direction
         if ufo.dx == 0 then
             leave_dx_direction = (ufo.x > gameWidth / 2) and -1 or 1
              print("UFO: dx was 0 while leaving, re-established direction: " .. leave_dx_direction)
         end
 
         ufo.dx = leave_dx_direction * UFO_SPEED * UFO_LEAVING_SPEED_MULTIPLIER
-        ufo.dy = 0 -- Ensure horizontal exit
+        ufo.dy = 0 
         ufo.x = ufo.x + ufo.dx * dt
-        ufo.y = ufo.y + ufo.dy * dt -- Included for completeness, though dy is 0
+        ufo.y = ufo.y + ufo.dy * dt 
 
-        -- Check if off-screen to despawn
         if (ufo.dx > 0 and ufo.x > gameWidth + despawn_buffer) or
            (ufo.dx < 0 and ufo.x < -despawn_buffer) then
             print("UFO has left the screen.")
-            UFO.destroy(false) -- False: not destroyed by player
+            UFO.destroy(false) 
         end
-        return -- No other logic if leaving
+        return 
     end
 
-    -- Update lifetime (only if not already leaving due to player death or other reasons)
     ufo.lifetime = ufo.lifetime - dt
     if ufo.lifetime <= 0 then
         print("UFO lifetime expired. Setting to leave.")
@@ -147,18 +130,16 @@ function UFO.update(dt, PlayerObject)
         if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then
             sounds.ufo_flying:stop()
         end
-        -- Set initial leave direction based on current position if lifetime expires
-        if ufo.dx == 0 then -- If not moving horizontally, pick a side
+
+        if ufo.dx == 0 then 
             ufo.dx = (ufo.x < gameWidth / 2) and -UFO_SPEED or UFO_SPEED
         end
-        return -- Start leaving logic next frame
+        return 
     end
 
-    -- Normal movement (if not leaving)
     ufo.x = ufo.x + ufo.dx * dt
     ufo.y = ufo.y + ufo.dy * dt
 
-    -- Direction changes (if not leaving)
     ufoDirectionChangeTimer = ufoDirectionChangeTimer - dt
     if ufoDirectionChangeTimer <= 0 then
         local changeType = love.math.random(3)
@@ -178,7 +159,6 @@ function UFO.update(dt, PlayerObject)
         ufoDirectionChangeTimer = UFO_DIRECTION_CHANGE_INTERVAL * love.math.random(0.4, 1.0)
     end
 
-    -- Shooting (only if player is alive and UFO is not leaving)
     if PlayerObject and PlayerObject.isFullyAlive() and not ufo.leaving then
         ufoFireTimer = ufoFireTimer - dt
         if ufoFireTimer <= 0 then
@@ -187,15 +167,13 @@ function UFO.update(dt, PlayerObject)
         end
     end
 
-    -- Conditional vertical wrapping (only if fully on screen horizontally and not leaving)
     local onScreenBuffer = ufo.radius
     if not ufo.leaving and ufo.x > onScreenBuffer and ufo.x < gameWidth - onScreenBuffer then
         ufo.y = helpers.wrap(ufo.y, 0, gameHeight)
     else
-        ufo.y = math.max(ufo.radius, math.min(gameHeight - ufo.radius, ufo.y)) -- Clamp Y if near edges
+        ufo.y = math.max(ufo.radius, math.min(gameHeight - ufo.radius, ufo.y)) 
     end
 
-    -- Natural edge departure (if not already leaving for other reasons)
     if not ufo.leaving then
         if (ufo.dx > 0 and ufo.x >= gameWidth - ufo.radius) or (ufo.dx < 0 and ufo.x <= ufo.radius) then
             print("UFO reached edge naturally. Setting to leave.")
@@ -206,7 +184,6 @@ function UFO.update(dt, PlayerObject)
         end
     end
 
-    -- Update UFO bullets
     for i = #ufoBullets, 1, -1 do
         local b = ufoBullets[i]
         if b then
@@ -220,7 +197,6 @@ function UFO.update(dt, PlayerObject)
     end
 end
 
--- Draw UFO
 function UFO.draw()
     if not ufoActive or not ufo or not ufo.visible then return end
     if type(ufo.x) ~= "number" or type(ufo.y) ~= "number" or not ufo.shape then return end
@@ -242,7 +218,6 @@ function UFO.draw()
     end
 end
 
--- Fire a bullet from the UFO
 function UFO.fireBullet(PlayerObject)
     if not ufo or not PlayerObject or not PlayerObject.isFullyAlive() or ufo.leaving then
         return false
@@ -264,7 +239,6 @@ function UFO.fireBullet(PlayerObject)
     return true
 end
 
--- Destroy the UFO
 function UFO.destroy(hitByPlayer)
     if not ufoActive then return false end
 
@@ -290,7 +264,6 @@ function UFO.destroy(hitByPlayer)
     return true
 end
 
--- Check collision with a player bullet
 function UFO.checkBulletCollision(bullet)
     if not ufoActive or not ufo or ufo.leaving then return false end
     if not bullet or type(bullet.x) ~= "number" or type(bullet.y) ~= "number" then return false end
@@ -301,7 +274,6 @@ function UFO.checkBulletCollision(bullet)
     return distSq < (radiusSum * radiusSum)
 end
 
--- Check collision with player ship
 function UFO.checkPlayerCollision(PlayerObject)
     if not ufoActive or not ufo or ufo.leaving or not PlayerObject.canBeHit() then
         return false
@@ -309,7 +281,6 @@ function UFO.checkPlayerCollision(PlayerObject)
     local playerX, playerY = PlayerObject.getPosition()
     local playerRadius = PlayerObject.getRadius()
 
-    -- UFO body vs Player ship
     local dx_val = playerX - ufo.x
     local dy_val = playerY - ufo.y
     local distSq = dx_val * dx_val + dy_val * dy_val
@@ -319,7 +290,6 @@ function UFO.checkPlayerCollision(PlayerObject)
         return true
     end
 
-    -- UFO bullets vs Player ship
     for i = #ufoBullets, 1, -1 do
         local b = ufoBullets[i]
         if b then
@@ -337,7 +307,6 @@ function UFO.checkPlayerCollision(PlayerObject)
     return false
 end
 
--- Status checks
 function UFO.isActive() return ufoActive end
 function UFO.isLeaving() return ufo and ufo.leaving end
 function UFO.getPoints() return UFO_POINTS end
