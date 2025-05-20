@@ -58,7 +58,6 @@ function Player.resetState()
     gunTimer = 0
     invulnerableTimer = 0 
     hyperspaceTimer = 0
-    print("Player State Reset")
 end
 
 function Player.update(dt)

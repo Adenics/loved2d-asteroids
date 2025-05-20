@@ -49,7 +49,6 @@ function Asteroids.create(x, y, size)
 
         until dist >= safeRadius
 
-        print(string.format("Spawned asteroid at %.1f, %.1f (Dist: %.1f)", x, y, dist))
     end
 
     if not ASTEROID_SIZE_MAP[size] then size = 3 end

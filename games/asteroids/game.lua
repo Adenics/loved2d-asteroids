@@ -235,10 +235,6 @@ function game.keyreleased(key)
 
 end
 
-function game.resize(w, h)
-    print("Window resized to: " .. w .. "x" .. h .. ". Game will scale.")
-end
-
 function game.exit()
     if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
     if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then sounds.ufo_flying:stop() end

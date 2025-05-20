@@ -35,9 +35,6 @@ function Bullets.fire(player_object)
     local pAngle = player_object.getAngle()
     local pDX, pDY = player_object.getVelocity()
 
-    print(string.format("Bullets.fire: Player State - X: %.2f, Y: %.2f, Angle: %.2f, VelX: %.2f, VelY: %.2f",
-                        pX or -999, pY or -999, pAngle or -999, pDX or -999, pDY or -999))
-
     if type(pX) ~= "number" or type(pY) ~= "number" or type(pAngle) ~= "number" then
         print("Bullets.fire: ERROR - Player position or angle is not a number!")
         return false
@@ -60,9 +57,6 @@ function Bullets.fire(player_object)
         radius = 2
     }
     table.insert(bullets, newBullet)
-
-    print(string.format("Bullets.fire: Spawned Bullet at X: %.2f, Y: %.2f, DX: %.2f, DY: %.2f",
-                        newBullet.x, newBullet.y, newBullet.dx, newBullet.dy))
 
     if sounds and sounds.shoot then
         local s = sounds.shoot:clone()
