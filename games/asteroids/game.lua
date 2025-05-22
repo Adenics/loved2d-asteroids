@@ -60,7 +60,6 @@ function game.startGame()
         if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
         thrustPlaying = false
     end
-    print("First spawn complete. Wave: " .. wave)
 end
 
 function game.checkCollisions()
@@ -81,7 +80,6 @@ function game.checkCollisions()
         score = score + points
         if gameState == "playing" and Asteroids.getCount() == 0 and not UFO.isActive() and Player.isFullyAlive() then
             wave = wave + 1
-            print("Wave Cleared! Starting Wave " .. wave)
             Asteroids.spawnInitial(wave + 3)
         end
     end)
@@ -91,7 +89,6 @@ function game.checkCollisions()
         UFO.destroy(true)
         if gameState == "playing" and Asteroids.getCount() == 0 and not UFO.isActive() and Player.isFullyAlive() then
             wave = wave + 1
-            print("Wave Cleared (after UFO)! Starting Wave " .. wave)
             Asteroids.spawnInitial(wave + 3)
         end
     end
@@ -114,7 +111,6 @@ function game.update(dt)
                 if thrustPlaying then
                     if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
                     thrustPlaying = false
-                    print("Thrust sound stopped due to game over.")
                 end
             else
                 Player.startRespawnAnimation()
@@ -138,7 +134,6 @@ function game.update(dt)
             if thrustPlaying then
                 if sounds.thrust and sounds.thrust:isPlaying() then
                     sounds.thrust:stop()
-                    print("Thrust sound stopped because player is not fully alive.")
                 end
                 thrustPlaying = false
             end
@@ -169,7 +164,6 @@ function game.update(dt)
         if thrustPlaying then
             if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
             thrustPlaying = false
-            print("Thrust sound stopped (game over update loop).")
         end
     end
 end
@@ -238,7 +232,6 @@ end
 function game.exit()
     if sounds.thrust and sounds.thrust:isPlaying() then sounds.thrust:stop() end
     if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then sounds.ufo_flying:stop() end
-    print("Exiting Asteroids game state")
 end
 
 function game.getGameDimensions() return GAME_WIDTH, GAME_HEIGHT end

@@ -105,7 +105,6 @@ function Player.update(dt)
         hyperspaceTimer = HYPERSPACE_COOLDOWN
         invulnerableTimer = INVULNERABILITY_TIME 
         if sounds.hyperspace then sounds.hyperspace:play() end
-        print("Player hyperspaced. Visual invulnerability granted.")
     end
 end
 
@@ -113,12 +112,10 @@ function Player.hit()
 
     if not player or not player.alive or player.isDying or player.isRespawning then
         if player and invulnerableTimer > 0 then
-             print("Player.hit: Hit occurred during visual invulnerability, but damage is applied.")
         end
         return 
     end
 
-    print("Player.hit: Player has been hit!")
 
     if sounds.player_explode then sounds.player_explode:play() end
 
@@ -183,13 +180,11 @@ function Player.updateDeathAnimation(dt, onComplete)
         player.deathAnimProgress = math.min(1, player.deathAnimProgress + dt / DEATH_ANIM_DURATION)
         if player.deathAnimProgress >= 1 then
             player.isDying = false
-            print("Death Animation Finished.")
             if onComplete then onComplete() end
         end
     elseif player.gameOverFadeTimer ~= nil then
         player.gameOverFadeTimer = player.gameOverFadeTimer + dt
         if player.gameOverFadeTimer > GAME_OVER_FADE_DURATION then
-            print("Game over segment fade complete.")
             player.deathSegments = nil
             player.gameOverFadeTimer = nil
         end
@@ -197,7 +192,6 @@ function Player.updateDeathAnimation(dt, onComplete)
 end
 
 function Player.startRespawnAnimation()
-    print("Starting Respawn Animation...")
     local respawnX = gameWidth / 2
     local respawnY = gameHeight / 2
     player.x = respawnX
@@ -221,7 +215,6 @@ function Player.startRespawnAnimation()
             seg.startAngle = seg.angle
         end
     else
-        print("Warning: No death segments for respawn animation.")
 
     end
 
@@ -246,13 +239,11 @@ function Player.updateRespawnAnimation(dt)
     end
 
     if player.respawnAnimProgress >= 1 then
-        print("Respawn Animation Finished.")
         player.isRespawning = false
         player.visible = true
         player.alive = true
         invulnerableTimer = INVULNERABILITY_TIME 
         player.deathSegments = nil 
-        print("Player respawned. Visual invulnerability granted.")
     end
 end
 
@@ -339,10 +330,8 @@ function Player.setAlive(alive) player.alive = alive end
 function Player.setInvulnerable(invulnerable)
     if invulnerable then
         invulnerableTimer = INVULNERABILITY_TIME
-        print("Player visual invulnerability set ON. Duration: " .. INVULNERABILITY_TIME)
     else
         invulnerableTimer = 0
-        print("Player visual invulnerability set OFF.")
     end
 end
 

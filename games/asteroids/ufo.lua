@@ -87,7 +87,6 @@ function UFO.update(dt, PlayerObject)
     end
 
     if playerIsEffectivelyGone and not ufo.leaving then
-        print("UFO: Player is no longer active or game is over. UFO initiating leave sequence.")
         ufo.leaving = true
 
         if ufo.x < gameWidth / 2 then
@@ -107,7 +106,6 @@ function UFO.update(dt, PlayerObject)
 
         if ufo.dx == 0 then
             leave_dx_direction = (ufo.x > gameWidth / 2) and -1 or 1
-             print("UFO: dx was 0 while leaving, re-established direction: " .. leave_dx_direction)
         end
 
         ufo.dx = leave_dx_direction * UFO_SPEED * UFO_LEAVING_SPEED_MULTIPLIER
@@ -117,7 +115,6 @@ function UFO.update(dt, PlayerObject)
 
         if (ufo.dx > 0 and ufo.x > gameWidth + despawn_buffer) or
            (ufo.dx < 0 and ufo.x < -despawn_buffer) then
-            print("UFO has left the screen.")
             UFO.destroy(false) 
         end
         return 
@@ -125,7 +122,6 @@ function UFO.update(dt, PlayerObject)
 
     ufo.lifetime = ufo.lifetime - dt
     if ufo.lifetime <= 0 then
-        print("UFO lifetime expired. Setting to leave.")
         ufo.leaving = true
         if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then
             sounds.ufo_flying:stop()
@@ -176,7 +172,6 @@ function UFO.update(dt, PlayerObject)
 
     if not ufo.leaving then
         if (ufo.dx > 0 and ufo.x >= gameWidth - ufo.radius) or (ufo.dx < 0 and ufo.x <= ufo.radius) then
-            print("UFO reached edge naturally. Setting to leave.")
             ufo.leaving = true
             if sounds.ufo_flying and sounds.ufo_flying:isPlaying() then
                 sounds.ufo_flying:stop()
@@ -257,7 +252,6 @@ function UFO.destroy(hitByPlayer)
         sounds.ufo_flying:stop()
     end
 
-    print("Destroying UFO. Active: false. Hit by player: " .. tostring(hitByPlayer))
     ufo = nil
     ufoActive = false
     ufoBullets = {}
@@ -286,7 +280,6 @@ function UFO.checkPlayerCollision(PlayerObject)
     local distSq = dx_val * dx_val + dy_val * dy_val
     local radiusSum = playerRadius + ufo.radius
     if distSq < (radiusSum * radiusSum) then
-        print("Collision: Player ship vs UFO body")
         return true
     end
 
@@ -298,7 +291,6 @@ function UFO.checkPlayerCollision(PlayerObject)
             distSq = dx_val * dx_val + dy_val * dy_val
             radiusSum = playerRadius + (b.radius or 3)
             if distSq < (radiusSum * radiusSum) then
-                print("Collision: Player ship vs UFO bullet")
                 table.remove(ufoBullets, i)
                 return true
             end
